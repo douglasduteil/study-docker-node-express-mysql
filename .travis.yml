@@ -1,18 +1,15 @@
 ---
 git:
   depth: 1
-sudo: required
-services:
-  - docker
+sudo: false
 language: node_js
 cache:
   directories:
   - node_modules
 env:
-  DOCKER_COMPOSE_VERSION: 1.4.2
   global:
     - COVERAGE=false
-    - TASK=node
+    - INTEGRATION=false
 matrix:
   allow_failures:
     - node_js: '3'
@@ -30,24 +27,32 @@ matrix:
     - node_js: '2'
     - node_js: '1'
     - node_js: '0'
+    #
+    - node_js: node
+      env:
+        global:
+        - COVERAGE=true
+    #
+    - node_js: node
+      env:
+        global:
+        - INTEGRATION=true
+      sudo: required
+      services:
+        - docker
 before_install:
   # Force Docker Compose $DOCKER_COMPOSE_VERSION
   # https://docs.travis-ci.com/user/docker/
-  - sudo rm /usr/local/bin/docker-compose
-  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - chmod +x docker-compose
-  - sudo mv docker-compose /usr/local/bin
+  - "[ $INTEGRATION == false ] || .travis/force-docker-compose.sh"
+
 
   # Force NPM 3
-  - "NPM_VERSION=$(npm --version)"
-  - "[ '2.0.0' != `echo -e \"2.0.0\\n$NPM_VERSION\" | sort -Vr | head -n1` ] || npm install -g npm@2"
-  - "[ '3.0.0' != `echo -e \"3.0.0\\n$NPM_VERSION\" | sort -Vr | head -n1` ] || npm install -g npm"
+  - ".travis/force-npm-3.sh"
 
 script:
-  - docker-compose build
-  - docker-compose run test
+  - "[ $INTEGRATION == false ] || docker-compose build"
+  - "[ $INTEGRATION == false ] || docker-compose run test"
+  - "[ $INTEGRATION == true ] || npm test"
 
 after_script:
-  - "[ $COVERAGE == false ] || npm install codecov.io"
-  - "[ $COVERAGE == false ] || npm run coverage"
-  - "[ $COVERAGE == false ] || cat ./coverage/lcov.info | ./node_modules/codecov.io/bin/codecov.io.js"
+  - "[ $COVERAGE == false ] || .travis/extract-coverage.sh"
