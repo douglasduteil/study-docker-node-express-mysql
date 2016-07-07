@@ -30,12 +30,10 @@ matrix:
     #
     - node_js: node
       env:
-        global:
         - COVERAGE=true
     #
     - node_js: node
       env:
-        global:
         - INTEGRATION=true
       sudo: required
       services:
