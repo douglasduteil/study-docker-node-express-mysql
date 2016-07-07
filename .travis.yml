@@ -5,7 +5,7 @@ sudo: false
 language: node_js
 cache:
   directories:
-  - node_modules
+  - node/node_modules
 env:
   global:
     - COVERAGE=false
@@ -41,16 +41,18 @@ matrix:
 before_install:
   # Force Docker Compose $DOCKER_COMPOSE_VERSION
   # https://docs.travis-ci.com/user/docker/
-  - "[ $INTEGRATION == false ] || .travis/force-docker-compose.sh"
+  - "[ $INTEGRATION == false ] || sudo ./.travis/force-docker-compose.sh"
+  - "[ $INTEGRATION == false ] || docker-compose build"
 
+  #
+  - "[ $INTEGRATION == true ] || cd node"
 
   # Force NPM 3
   - ".travis/force-npm-3.sh"
 
 script:
-  - "[ $INTEGRATION == false ] || docker-compose build"
   - "[ $INTEGRATION == false ] || docker-compose run test"
   - "[ $INTEGRATION == true ] || npm test"
 
 after_script:
-  - "[ $COVERAGE == false ] || .travis/extract-coverage.sh"
+  - "[ $COVERAGE == false ] || ./.travis/extract-coverage.sh"
