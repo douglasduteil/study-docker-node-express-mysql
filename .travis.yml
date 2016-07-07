@@ -1,0 +1,53 @@
+---
+git:
+  depth: 1
+sudo: required
+services:
+  - docker
+language: node_js
+cache:
+  directories:
+  - node_modules
+env:
+  DOCKER_COMPOSE_VERSION: 1.4.2
+  global:
+    - COVERAGE=false
+    - TASK=node
+matrix:
+  allow_failures:
+    - node_js: '3'
+    - node_js: '2'
+    - node_js: '1'
+    - node_js: '0'
+  fast_finish: true
+  include:
+    #
+    - node_js: node
+    - node_js: '6'
+    - node_js: '5'
+    - node_js: '4'
+    - node_js: '3'
+    - node_js: '2'
+    - node_js: '1'
+    - node_js: '0'
+before_install:
+  # Force Docker Compose $DOCKER_COMPOSE_VERSION
+  # https://docs.travis-ci.com/user/docker/
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+
+  # Force NPM 3
+  - "NPM_VERSION=$(npm --version)"
+  - "[ '2.0.0' != `echo -e \"2.0.0\\n$NPM_VERSION\" | sort -Vr | head -n1` ] || npm install -g npm@2"
+  - "[ '3.0.0' != `echo -e \"3.0.0\\n$NPM_VERSION\" | sort -Vr | head -n1` ] || npm install -g npm"
+
+script:
+  - docker-compose build
+  - docker-compose run test
+
+after_script:
+  - "[ $COVERAGE == false ] || npm install codecov.io"
+  - "[ $COVERAGE == false ] || npm run coverage"
+  - "[ $COVERAGE == false ] || cat ./coverage/lcov.info | ./node_modules/codecov.io/bin/codecov.io.js"
